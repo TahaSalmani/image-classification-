@@ -1,11 +1,12 @@
-from flask import Flask, request, jsonify, render_template
 import os
+import sys
+
+sys.path.append(os.path.abspath("."))
+
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS, cross_origin
 from cnnclassifier.utils.common import decodeimage
 from cnnclassifier.pipeline.predict import PredictPipeline
-import sys
-import os
-sys.path.append(os.path.abspath("."))
 
 os.putenv('LANG', 'en_US.UTF-8')
 os.putenv('LC_ALL', 'en_US.UTF-8')
