@@ -1,4 +1,4 @@
-FROM python:3.8-slim-bullseye
+FROM python:3.8-slim
 
 WORKDIR /app
 
@@ -6,7 +6,13 @@ COPY . /app
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+RUN pip install -e .
 
-EXPOSE 8080
+ARG DAGSHUB_USERNAME
+ARG DAGSHUB_TOKEN
+
+RUN dvc remote modify origin --local user ${DAGSHUB_USERNAME}
+RUN dvc remote modify origin --local password ${DAGSHUB_TOKEN}
+RUN dvc pull -r origin
 
 CMD ["python3", "app.py"]
