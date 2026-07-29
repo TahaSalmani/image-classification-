@@ -10,6 +10,10 @@ from cnnclassifier.pipeline.predict import PredictPipeline
 os.putenv('LANG', 'en_US.UTF-8')
 os.putenv('LC_ALL', 'en_US.UTF-8')
 
+os.system("dvc remote modify origin --local user $DAGSHUB_USERNAME")
+os.system("dvc remote modify origin --local password $DAGSHUB_TOKEN")
+os.system("dvc pull -r origin")
+
 app = Flask(__name__)
 CORS(app)
 
