@@ -8,7 +8,7 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 RUN pip install -e .
 
-=ARG DAGSHUB_USERNAME
+ARG DAGSHUB_USERNAME
 ARG DAGSHUB_TOKEN
 
 RUN dvc remote modify origin --local user "${DAGSHUB_USERNAME}"
