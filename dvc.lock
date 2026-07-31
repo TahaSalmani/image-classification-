@@ -12,7 +12,7 @@ stages:
       md5: a4f5f06947b5272ad39a3bb156848625
       size: 977
     outs:
-    - path: artifacts/data_ingestion/Chicken-fecal-images
+    - path: artifacts/data_ingestion/train
       hash: md5
       md5: 9e1f8dd2eae3c29e9d635df89d438ae4.dir
       size: 12207807
@@ -47,7 +47,7 @@ stages:
   training:
     cmd: python src/cnnclassifier/pipeline/stage_03_training.py
     deps:
-    - path: artifacts/data_ingestion/Chicken-fecal-images
+    - path: artifacts/data_ingestion/train
       hash: md5
       md5: 9e1f8dd2eae3c29e9d635df89d438ae4.dir
       size: 12207807
@@ -86,7 +86,7 @@ stages:
   evaluation:
     cmd: python src/cnnclassifier/pipeline/stage_04_Evaluation.py
     deps:
-    - path: artifacts/data_ingestion/Chicken-fecal-images
+    - path: artifacts/data_ingestion/train
       hash: md5
       md5: 9e1f8dd2eae3c29e9d635df89d438ae4.dir
       size: 12207807
