@@ -20,10 +20,10 @@ class PredictPipeline:
 
 
         if result[0] == 1 :
-            prediction = "Healthy"
+            prediction = "Normal"
             return [{"image" : prediction}]
         else:
-            prediction = "Coccidiosis"
+            prediction = "Pneumonia"
             return [{"image" : prediction}]
 
 
