@@ -1,5 +1,6 @@
 import os
 import sys
+import urllib.request
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from flask import Flask, request, jsonify, render_template
@@ -10,9 +11,21 @@ from cnnclassifier.pipeline.predict import PredictPipeline
 os.putenv('LANG', 'en_US.UTF-8')
 os.putenv('LC_ALL', 'en_US.UTF-8')
 
-os.system("dvc remote modify origin --local user $DAGSHUB_USERNAME")
-os.system("dvc remote modify origin --local password $DAGSHUB_TOKEN")
-os.system("dvc pull -r origin")
+
+MODEL_PATH = "artifacts/training/model.h5"
+
+if not os.path.exists(MODEL_PATH):
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    print("Downloading model from DAGsHub...")
+
+    # لینک مستقیم فایل مدل شما در DAGsHub
+    dagshub_model_url = "https://dagshub.com/TahaSalmani/image-classification-/raw/main/artifacts/training/model.h5"
+
+    try:
+        urllib.request.urlretrieve(dagshub_model_url, MODEL_PATH)
+        print("Model downloaded successfully!")
+    except Exception as e:
+        print(f"Error downloading model: {e}")
 
 app = Flask(__name__)
 CORS(app)
@@ -32,8 +45,8 @@ def home():
 @app.route("/train", methods=['GET', 'POST'])
 @cross_origin()
 def trainingRoute():
-    os.system("python train.py")  # یا dvc repro
-    return "training Done successfully"
+    os.system("python main.py")
+    return "Training done successfully"
 
 
 @app.route("/predict", methods=['POST'])
