@@ -12,13 +12,13 @@ os.putenv('LANG', 'en_US.UTF-8')
 os.putenv('LC_ALL', 'en_US.UTF-8')
 
 
-MODEL_PATH = "artifacts/training/model.h5"
+MODEL_PATH = os.path.join("artifacts", "training", "model.h5")
 
 if not os.path.exists(MODEL_PATH):
     os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
     print("Downloading model from DAGsHub...")
 
-    # لینک مستقیم فایل مدل شما در DAGsHub
+    # لینک مستقیم دانلود Raw فایل مدل از DAGsHub
     dagshub_model_url = "https://dagshub.com/TahaSalmani/image-classification-/raw/main/artifacts/training/model.h5"
 
     try:
@@ -26,6 +26,7 @@ if not os.path.exists(MODEL_PATH):
         print("Model downloaded successfully!")
     except Exception as e:
         print(f"Error downloading model: {e}")
+# =========================================================
 
 app = Flask(__name__)
 CORS(app)
