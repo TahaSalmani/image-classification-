@@ -17,7 +17,7 @@ dagshub_token = os.environ.get("DAGSHUB_TOKEN")
 if dagshub_user and dagshub_token:
     os.system(f'dvc remote modify origin --local user "{dagshub_user}"')
     os.system(f'dvc remote modify origin --local password "{dagshub_token}"')
-    os.system("dvc pull -r origin")
+    os.system("dvc pull artifacts/training/model.h5 -r origin")
 else:
     print("WARNING: DAGSHUB_USERNAME / DAGSHUB_TOKEN not set, skipping dvc pull.")
 
