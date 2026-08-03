@@ -5,29 +5,29 @@ stages:
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 78f8f1deeea67f5b5f9f1f161a74a4d5
-      size: 827
+      md5: 184e7c8955e774f0bb9534243644e663
+      size: 760
     - path: src/cnnclassifier/pipeline/stage_01_data_ingestion.py
       hash: md5
-      md5: a4f5f06947b5272ad39a3bb156848625
-      size: 977
+      md5: af90db3f731604d12a911e87d6a8279e
+      size: 949
     outs:
     - path: artifacts/data_ingestion/train
       hash: md5
-      md5: 9e1f8dd2eae3c29e9d635df89d438ae4.dir
-      size: 12207807
-      nfiles: 390
+      md5: 7e49b102d2764de12ae74069c7b87f3b.dir
+      size: 1154397616
+      nfiles: 5216
   prepare_base_model:
     cmd: python src/cnnclassifier/pipeline/stage_02_prepare_base_model.py
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: d237656734d1821a19b40eeed90d9f08
-      size: 788
+      md5: 184e7c8955e774f0bb9534243644e663
+      size: 760
     - path: src/cnnclassifier/pipeline/stage_02_prepare_base_model.py
       hash: md5
-      md5: 54c8963a56873d74d889f3d4b92d3f2e
-      size: 1040
+      md5: 48993faa9a1e4ca06f85ebf8210e7f1a
+      size: 1010
     params:
       params.yaml:
         CLASSES: 2
@@ -41,39 +41,39 @@ stages:
     outs:
     - path: artifacts/prepare_base_model
       hash: md5
-      md5: 75cb48622ac7cc82dcf8f56b0ada4835.dir
-      size: 118073624
+      md5: e8bc6ddfb48b4d9281c4352c5e8828f8.dir
+      size: 118075312
       nfiles: 2
   training:
     cmd: python src/cnnclassifier/pipeline/stage_03_training.py
     deps:
     - path: artifacts/data_ingestion/train
       hash: md5
-      md5: 9e1f8dd2eae3c29e9d635df89d438ae4.dir
-      size: 12207807
-      nfiles: 390
+      md5: 7e49b102d2764de12ae74069c7b87f3b.dir
+      size: 1154397616
+      nfiles: 5216
     - path: artifacts/prepare_base_model
       hash: md5
-      md5: f949b3a197d077e9e08289e8b2713346.dir
-      size: 118073624
+      md5: e8bc6ddfb48b4d9281c4352c5e8828f8.dir
+      size: 118075312
       nfiles: 2
     - path: config/config.yaml
       hash: md5
-      md5: 78f8f1deeea67f5b5f9f1f161a74a4d5
-      size: 827
+      md5: 184e7c8955e774f0bb9534243644e663
+      size: 760
     - path: src/cnnclassifier/components/prepare_callbacks.py
       hash: md5
-      md5: 8eccfdf5d735faeae660ab3cff1ae442
-      size: 997
+      md5: e9f8d6e55d870e70d72f8b36e97a7795
+      size: 962
     - path: src/cnnclassifier/pipeline/stage_03_training.py
       hash: md5
-      md5: 09c522294ff77481ab42c4121d349bbe
-      size: 1280
+      md5: 84c928f7b70da4c3477593b406b69261
+      size: 1243
     params:
       params.yaml:
         AUGMENTATION: true
         BATCH_SIZE: 16
-        EPOCHS: 1
+        EPOCHS: 5
         IMAGE_SIZE:
         - 224
         - 224
@@ -81,28 +81,28 @@ stages:
     outs:
     - path: artifacts/training/model.h5
       hash: md5
-      md5: 9d5bcbdbde87604a7507e928c99d34dc
-      size: 59147544
+      md5: c190cfe9cbb459205bee09833bd7c5ec
+      size: 59148696
   evaluation:
     cmd: python src/cnnclassifier/pipeline/stage_04_Evaluation.py
     deps:
     - path: artifacts/data_ingestion/train
       hash: md5
-      md5: 9e1f8dd2eae3c29e9d635df89d438ae4.dir
-      size: 12207807
-      nfiles: 390
+      md5: 7e49b102d2764de12ae74069c7b87f3b.dir
+      size: 1154397616
+      nfiles: 5216
     - path: artifacts/training/model.h5
       hash: md5
-      md5: 9d5bcbdbde87604a7507e928c99d34dc
-      size: 59147544
+      md5: c190cfe9cbb459205bee09833bd7c5ec
+      size: 59148696
     - path: config/config.yaml
       hash: md5
-      md5: 78f8f1deeea67f5b5f9f1f161a74a4d5
-      size: 827
+      md5: 184e7c8955e774f0bb9534243644e663
+      size: 760
     - path: src/cnnclassifier/pipeline/stage_04_Evaluation.py
       hash: md5
-      md5: 41aeee0d5e9f4748927b7a618597e8a7
-      size: 861
+      md5: 4376953dc2671f6a698e4812ac8fa0f3
+      size: 833
     params:
       params.yaml:
         BATCH_SIZE: 16
@@ -113,5 +113,5 @@ stages:
     outs:
     - path: scores.json
       hash: md5
-      md5: 40ee8c98818551dd3d34fa94e30dc26f
-      size: 57
+      md5: 8993ffd7a651a8c319ef2c830dbdb73a
+      size: 69
