@@ -7,11 +7,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
 
 COPY . /app
 
-RUN if [ ! -d .git ]; then \
-      git init -q && \
-      git add -A -q && \
-      git -c user.email="render@deploy.local" -c user.name="Render Deploy" commit -q -m "render snapshot" --allow-empty; \
-    fi
+RUN git init \
+    && git config user.email "render@deploy.local" \
+    && git config user.name "Render Deploy" \
+    && git add -A \
+    && git commit -m "render snapshot" --allow-empty
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
