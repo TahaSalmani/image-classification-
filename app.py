@@ -34,7 +34,7 @@ CORS(app)
 
 class ClientApp:
     def __init__(self):
-        self.filename = "inputImage.jpg"
+        self.filename = "inputImage.jpeg"
 
 
 @app.route("/", methods=['GET'])
