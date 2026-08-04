@@ -1,4 +1,4 @@
-tensorflow-cpu
+tensorflow-cpu == 2.21.0
 pandas
 dvc
 notebook
