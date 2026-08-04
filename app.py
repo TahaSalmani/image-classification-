@@ -20,7 +20,7 @@ if dagshub_user and dagshub_token:
     os.system('dvc remote modify origin --local auth basic')
     os.system(f'dvc remote modify origin --local user "{dagshub_user}"')
     os.system(f'dvc remote modify origin --local password "{dagshub_token}"')
-    exit_code = os.system("dvc pull artifacts/training/model.h5 -r origin -v")
+    exit_code = os.system("timeout 60 dvc pull artifacts/training/model.h5 -r origin -v")
     print(f"DEBUG: dvc pull exit code = {exit_code}")
 else:
     print("WARNING: DAGSHUB_USERNAME / DAGSHUB_TOKEN not set, skipping dvc pull.")
