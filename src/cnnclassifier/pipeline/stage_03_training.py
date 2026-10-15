@@ -1,5 +1,3 @@
-from tensorflow.python.keras.utils.version_utils import training_v1
-
 from cnnclassifier.config.configuration import ConfigurationManager
 from cnnclassifier.components.training import Training
 from cnnclassifier.components.prepare_callbacks import PrepareCallback

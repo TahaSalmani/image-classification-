@@ -10,7 +10,7 @@ from typing import Any
 import  base64
 from ensure import ensure_annotations
 from cnnclassifier import  logger
-import joblib
+
 @ensure_annotations
 def read_yaml(path_to_yaml : Path) -> ConfigBox:
     """Reads  YAML file and returns
@@ -120,7 +120,7 @@ def decodeimage (imgstring , filename ) :   ## base 64 to pic
     imgdata = base64.b64decode(imgstring)
     with open(filename, 'wb') as f:
         f.write(imgdata)
-        f.close()
+
 def encodeimageinbase64 (croppedimagepath) :   ## pic to base 64
     with open(croppedimagepath, 'rb') as f:
         return base64.b64encode(f.read())

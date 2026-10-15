@@ -10,7 +10,9 @@ class Evaluation:
     def _valid_generator(self):
         datagenerator_kwargs = dict(
             rescale=1. / 255,
-            validation_split=0.30
+            # must match training.py's split, otherwise the reported metrics are
+            # measured on a different (and train-overlapping) subset
+            validation_split=0.20
         )
 
         dataflow_kwargs = dict(

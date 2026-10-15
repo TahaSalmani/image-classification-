@@ -1,7 +1,4 @@
-import  os
-import  urllib.request as  request
-from zipfile import  ZipFile
-import  tensorflow as tf
+import tensorflow as tf
 from cnnclassifier.entity.config_entity import  PrepareBaseModelConfig
 from pathlib import Path
 
@@ -29,8 +26,9 @@ class PrepareBaseModel :
         if freeze_all :
             for layer in model.layers :
                 layer.trainable = False
-        elif (freeze_till is not None) and (freeze_till == 0) :
-            for layer in model.layers :
+        elif freeze_till is not None :
+            # freeze only the first `freeze_till` layers, keep the rest trainable
+            for layer in model.layers[:freeze_till] :
                 layer.trainable = False
         flatten_in  = tf.keras.layers.Flatten()(model.output)
         prediction = tf.keras.layers.Dense(units=classes , activation="softmax")(flatten_in)
@@ -62,5 +60,5 @@ class PrepareBaseModel :
         self.save_model(path = self.config.updated_base_model_path , model = self.full_model)
 
     @staticmethod
-    def save_model(path = Path , model = tf.keras.Model ) :
+    def save_model(path: Path, model: tf.keras.Model) :
         model.save(path)
