@@ -15,8 +15,8 @@ class Training:
         )
 
         self.model.compile(
-            optimizer=tf.keras.optimizers.SGD(
-                learning_rate=0.01
+            optimizer=tf.keras.optimizers.Adam(
+                learning_rate=self.config.params_learning_rate
             ),
             loss=tf.keras.losses.CategoricalCrossentropy(),
             metrics=["accuracy"])

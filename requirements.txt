@@ -1,4 +1,7 @@
-tensorflow-cpu == 2.21.0
+# 2.15.x is the last line shipping Keras 2, which this codebase targets:
+# it still has tf.keras.preprocessing.image.ImageDataGenerator and can save/load .h5.
+# TF >= 2.16 defaults to Keras 3, where both are removed and the pipeline breaks.
+tensorflow-cpu==2.15.1
 pandas
 dvc
 notebook
@@ -14,4 +17,6 @@ types-PyYAML
 scipy
 Flask
 Flask-Cors
+gunicorn
+kaggle
 -e .

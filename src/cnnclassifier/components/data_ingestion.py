@@ -21,7 +21,15 @@ class DataIngestion:
             download_dir = os.path.dirname(self.config.local_data_file)
             os.makedirs(download_dir, exist_ok=True)
 
-            os.system(f"kaggle datasets download -d {dataset_slug} -p {download_dir}")
+            # os.system returns a non-zero code on failure; without checking it a
+            # missing kaggle CLI or bad credentials silently produced no data and
+            # every later stage failed with a confusing "file not found".
+            rc = os.system(f"kaggle datasets download -d {dataset_slug} -p {download_dir}")
+            if rc != 0:
+                raise RuntimeError(
+                    f"kaggle download failed (exit {rc}). Is the kaggle CLI installed "
+                    f"and ~/.kaggle/kaggle.json present?"
+                )
 
             downloaded_zip = os.path.join(
                 download_dir, "chest-xray-pneumonia.zip"
@@ -29,6 +37,11 @@ class DataIngestion:
             if os.path.exists(downloaded_zip):
                 os.rename(downloaded_zip, self.config.local_data_file)
 
+            if not os.path.exists(self.config.local_data_file):
+                raise RuntimeError(
+                    f"expected dataset at {self.config.local_data_file} after download, "
+                    f"but it is missing"
+                )
             logger.info(f"Dataset downloaded to {self.config.local_data_file}")
         else:
             logger.info(
