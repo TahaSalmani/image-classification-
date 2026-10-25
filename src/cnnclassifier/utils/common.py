@@ -8,6 +8,7 @@ from box import ConfigBox
 from pathlib import Path
 from typing import Any
 import  base64
+import  binascii
 from ensure import ensure_annotations
 from cnnclassifier import  logger
 
@@ -117,7 +118,13 @@ def get_size (path : Path) -> str :
     return f"{size_in_kb} kb"
 
 def decodeimage (imgstring , filename ) :   ## base 64 to pic
-    imgdata = base64.b64decode(imgstring)
+    if imgstring.startswith("data:"):
+        imgstring = imgstring.split(",", 1)[1]
+    imgstring = "".join(imgstring.split())
+    try:
+        imgdata = base64.b64decode(imgstring, validate=True)
+    except binascii.Error as error:
+        raise ValueError(f"invalid base64 image: {error}") from error
     with open(filename, 'wb') as f:
         f.write(imgdata)
 
