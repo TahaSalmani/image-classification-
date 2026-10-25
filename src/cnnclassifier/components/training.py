@@ -29,6 +29,16 @@ class Training:
             metrics=["accuracy"],
         )
 
+    @staticmethod
+    def _patient_id(image_path: Path) -> str:
+        stem = image_path.stem
+        if "_" in stem:
+            return stem.split("_")[0]
+        # NORMAL files use IDs like IM-0115-0001 or NORMAL2-IM-1427-0001;
+        # the trailing segment is the image number, not the patient.
+        parts = stem.split("-")
+        return "-".join(parts[:-1]) if len(parts) > 1 else stem
+
     def _patient_split(self):
         root = Path(self.config.training_data)
         records = []
@@ -42,7 +52,7 @@ class Training:
                         {
                             "filename": str(image_path),
                             "class": class_dir.name,
-                            "patient": image_path.stem.split("_")[0],
+                            "patient": self._patient_id(image_path),
                         }
                     )
         if not records:
