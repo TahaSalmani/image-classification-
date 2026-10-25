@@ -1,82 +1,151 @@
 import os
+import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
-# Must be set before TensorFlow is imported (predict.py imports it).
+# These must be set before TensorFlow is imported by predict.py.
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("TF_NUM_INTRAOP_THREADS", "1")
+os.environ.setdefault("TF_NUM_INTEROP_THREADS", "1")
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS, cross_origin
+from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
+
+from cnnclassifier.pipeline.predict import (
+    MODEL_PATH,
+    PredictPipeline,
+    get_model,
+    is_model_loaded,
+)
 from cnnclassifier.utils.common import decodeimage
-from cnnclassifier.pipeline.predict import PredictPipeline, get_model
 
-os.putenv('LANG', 'en_US.UTF-8')
-os.putenv('LC_ALL', 'en_US.UTF-8')
+MAX_BASE64_CHARS = 14 * 1024 * 1024
 
-dagshub_user = os.environ.get("DAGSHUB_USERNAME")
-dagshub_token = os.environ.get("DAGSHUB_TOKEN")
 
-if dagshub_user and dagshub_token:
-    os.system('dvc remote modify origin --local auth basic')
-    os.system(f'dvc remote modify origin --local user "{dagshub_user}"')
-    os.system(f'dvc remote modify origin --local password "{dagshub_token}"')
-    exit_code = os.system("timeout 60 dvc pull artifacts/training/model.h5 -r origin -v")
-    print(f"dvc pull exit code = {exit_code}", flush=True)
-else:
-    print("WARNING: DAGSHUB_USERNAME / DAGSHUB_TOKEN not set, skipping dvc pull.", flush=True)
+def _run(command, timeout):
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        print(f"command failed: {' '.join(command[:3])}: {error}", flush=True)
+        return False
+    if result.returncode != 0:
+        print(
+            f"command exited {result.returncode}: {' '.join(command[:3])}\n"
+            f"{result.stderr[-2000:]}",
+            flush=True,
+        )
+        return False
+    return True
 
-# Load the model once at boot so every request reuses the same instance.
-# Tolerate a missing model so the container still starts and /predict returns
-# a clear error instead of the whole app failing to import.
-try:
-    get_model()
-    print("model preloaded successfully", flush=True)
-except Exception as e:
-    print(f"WARNING: could not preload model: {e}", flush=True)
+
+def _prepare_model():
+    if os.environ.get("PULL_MODEL_ON_START", "1") != "1":
+        return
+    if Path(MODEL_PATH).is_file():
+        return
+
+    username = os.environ.get("DAGSHUB_USERNAME")
+    token = os.environ.get("DAGSHUB_TOKEN")
+    if not (username and token):
+        print(
+            "WARNING: model is missing and DAGSHUB_USERNAME / DAGSHUB_TOKEN "
+            "are not set; /predict will return 503.",
+            flush=True,
+        )
+        return
+
+    _run(["dvc", "remote", "modify", "origin", "--local", "auth", "basic"], 20)
+    _run(
+        ["dvc", "remote", "modify", "origin", "--local", "user", username], 20
+    )
+    _run(
+        ["dvc", "remote", "modify", "origin", "--local", "password", token],
+        20,
+    )
+    print("pulling model from DagsHub...", flush=True)
+    _run(["dvc", "pull", MODEL_PATH, "-r", "origin", "-v"], 90)
+
+
+_prepare_model()
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = MAX_BASE64_CHARS + 4096
 CORS(app)
 
 
-@app.route("/", methods=['GET'])
-@cross_origin()
+@app.errorhandler(413)
+def request_too_large(_error):
+    return jsonify({"error": "request body is too large"}), 413
+
+
+@app.route("/", methods=["GET"])
 def home():
     return render_template("index.html")
 
 
-@app.route("/train", methods=['GET', 'POST'])
-@cross_origin()
-def trainingRoute():
-    os.system("python main.py")
-    return "Training done successfully"
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify(
+        {
+            "status": "ok",
+            "model_loaded": is_model_loaded(),
+            "model_path": MODEL_PATH,
+        }
+    )
 
 
-@app.route("/predict", methods=['POST'])
-@cross_origin()
-def predictionRoute():
-    payload = request.get_json(silent=True) or {}
-    imgstring = payload.get('image')
-    if not imgstring:
+@app.route("/predict", methods=["POST"])
+def prediction_route():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "request body must be a JSON object"}), 400
+
+    imgstring = payload.get("image")
+    if not isinstance(imgstring, str) or not imgstring.strip():
         return jsonify({"error": "request body must contain an 'image' field"}), 400
+    if len(imgstring) > MAX_BASE64_CHARS:
+        return (
+            jsonify({"error": "image is too large; maximum is 10 MB"}),
+            413,
+        )
+    if not Path(MODEL_PATH).is_file():
+        return jsonify({"error": "model is not available on this server"}), 503
 
-    # Write to a unique temp file: /tmp is the only reliably writable path on
-    # Render, and a per-request name avoids concurrent requests clobbering one
-    # another.
     fd, tmp_path = tempfile.mkstemp(suffix=".jpeg")
     os.close(fd)
     try:
         decodeimage(imgstring, tmp_path)
         result = PredictPipeline(tmp_path).predict()
         return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    except FileNotFoundError as error:
+        return jsonify({"error": str(error)}), 503
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8080)
+    try:
+        get_model()
+        print("model loaded for development server", flush=True)
+    except Exception as error:
+        print(f"WARNING: model not loaded: {error}", flush=True)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", "8080")),
+        debug=False,
+    )

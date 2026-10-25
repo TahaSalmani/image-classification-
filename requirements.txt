@@ -2,21 +2,23 @@
 # it still has tf.keras.preprocessing.image.ImageDataGenerator and can save/load .h5.
 # TF >= 2.16 defaults to Keras 3, where both are removed and the pipeline breaks.
 tensorflow-cpu==2.15.1
-pandas
-dvc
-notebook
-numpy
-matplotlib
-seaborn
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.13.1
+Pillow==10.4.0
+scikit-learn==1.5.2
+matplotlib==3.8.4
+seaborn==0.13.2
 python-box==6.0.2
-pyYAML
-tqdm
+PyYAML==6.0.2
+tqdm==4.66.5
 ensure==1.0.2
-joblib
-types-PyYAML
-scipy
-Flask
-Flask-Cors
-gunicorn
-kaggle
+joblib==1.4.2
+types-PyYAML==6.0.12.20240917
+Flask==3.0.3
+Flask-Cors==4.0.1
+gunicorn==26.2.0
+kaggle==1.6.17
+dvc==3.67.1
+notebook==7.2.2
 -e .

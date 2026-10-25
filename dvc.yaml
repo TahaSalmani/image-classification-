@@ -1,16 +1,27 @@
-stages :
-  data_ingestion :
-    cmd : python src/cnnclassifier/pipeline/stage_01_data_ingestion.py
+stages:
+  data_ingestion:
+    cmd: python src/cnnclassifier/pipeline/stage_01_data_ingestion.py
     deps:
       - src/cnnclassifier/pipeline/stage_01_data_ingestion.py
+      - src/cnnclassifier/components/data_ingestion.py
+      - src/cnnclassifier/config/configuration.py
+      - src/cnnclassifier/entity/config_entity.py
+      - src/cnnclassifier/utils/common.py
       - config/config.yaml
     outs:
       - artifacts/data_ingestion/train
+      - artifacts/data_ingestion/test
+      - artifacts/data_ingestion/val
+      - artifacts/data_ingestion/manifest.json
 
-  prepare_base_model :
-    cmd : python src/cnnclassifier/pipeline/stage_02_prepare_base_model.py
-    deps :
+  prepare_base_model:
+    cmd: python src/cnnclassifier/pipeline/stage_02_prepare_base_model.py
+    deps:
       - src/cnnclassifier/pipeline/stage_02_prepare_base_model.py
+      - src/cnnclassifier/components/prepare_base_model.py
+      - src/cnnclassifier/config/configuration.py
+      - src/cnnclassifier/entity/config_entity.py
+      - src/cnnclassifier/utils/common.py
       - config/config.yaml
     params:
       - IMAGE_SIZE
@@ -18,6 +29,7 @@ stages :
       - CLASSES
       - WEIGHT
       - LEARNING_RATE
+      - FREEZE_TILL
     outs:
       - artifacts/prepare_base_model
 
@@ -25,7 +37,11 @@ stages :
     cmd: python src/cnnclassifier/pipeline/stage_03_training.py
     deps:
       - src/cnnclassifier/pipeline/stage_03_training.py
+      - src/cnnclassifier/components/training.py
       - src/cnnclassifier/components/prepare_callbacks.py
+      - src/cnnclassifier/config/configuration.py
+      - src/cnnclassifier/entity/config_entity.py
+      - src/cnnclassifier/utils/common.py
       - config/config.yaml
       - artifacts/data_ingestion/train
       - artifacts/prepare_base_model
@@ -34,25 +50,24 @@ stages :
       - EPOCHS
       - BATCH_SIZE
       - AUGMENTATION
+      - LEARNING_RATE
     outs:
       - artifacts/training/model.h5
 
-
-  evaluation :
-    cmd : python src/cnnclassifier/pipeline/stage_04_Evaluation.py
+  evaluation:
+    cmd: python src/cnnclassifier/pipeline/stage_04_Evaluation.py
     deps:
       - src/cnnclassifier/pipeline/stage_04_Evaluation.py
+      - src/cnnclassifier/components/evaluation.py
+      - src/cnnclassifier/utils/common.py
+      - src/cnnclassifier/config/configuration.py
+      - src/cnnclassifier/entity/config_entity.py
       - config/config.yaml
-      - artifacts/data_ingestion/train
+      - artifacts/data_ingestion/test
       - artifacts/training/model.h5
     params:
       - IMAGE_SIZE
       - BATCH_SIZE
     metrics:
       - scores.json:
-          cache : false
-
-
-
-
-
+          cache: false
