@@ -9,10 +9,8 @@ from pathlib import Path
 from typing import Any
 import  base64
 import  binascii
-from ensure import ensure_annotations
 from cnnclassifier import  logger
 
-@ensure_annotations
 def read_yaml(path_to_yaml : Path) -> ConfigBox:
     """Reads  YAML file and returns
     Args :
@@ -36,7 +34,6 @@ def read_yaml(path_to_yaml : Path) -> ConfigBox:
     except Exception as e :
         raise e
 
-@ensure_annotations
 def create_directories (path_to_dir : list , verbose = True) :
     """ Creates directories inside path_to_dir
     Args :
@@ -52,7 +49,6 @@ def create_directories (path_to_dir : list , verbose = True) :
 
 
 
-@ensure_annotations
 def save_json (path : Path , data : dict) :
     """ saves data to JSON file
     Args :
@@ -64,7 +60,6 @@ def save_json (path : Path , data : dict) :
         json.dump(data, f , indent=4)
         logger.info(f"json file  saved in  : {path}")
 
-@ensure_annotations
 def load_json (path : Path) ->  ConfigBox :
     """ loads JSON file
     Args :
@@ -81,7 +76,6 @@ def load_json (path : Path) ->  ConfigBox :
         logger.info(f"json file : {path} loaded successfully")
         return ConfigBox(content)
 
-@ensure_annotations
 def save_binary (data:Any, path : Path) :
     """ saves data to binary file
     Args : data(Any) : data to save to binary file
@@ -90,7 +84,6 @@ def save_binary (data:Any, path : Path) :
     joblib.dump(value= data, filename=path)
     logger.info(f"binary file saved in  : {path}")
 
-@ensure_annotations
 def load_binary (path : Path) -> Any :
     """ loads binary file
     Args :
@@ -104,7 +97,6 @@ def load_binary (path : Path) -> Any :
     logger.info(f"binary file loaded in  : {path}")
     return data
 
-@ensure_annotations
 def get_size (path : Path) -> str :
     """ returns size of file in kb
     Args :

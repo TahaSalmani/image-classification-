@@ -12,7 +12,6 @@ seaborn==0.13.2
 python-box==6.0.2
 PyYAML==6.0.2
 tqdm==4.66.5
-ensure==1.0.2
 joblib==1.4.2
 types-PyYAML==6.0.12.20240917
 Flask==3.0.3
