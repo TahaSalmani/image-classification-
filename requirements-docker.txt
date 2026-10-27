@@ -7,7 +7,6 @@ scipy==1.13.1
 Pillow==10.4.0
 python-box==6.0.2
 PyYAML==6.0.2
-ensure==1.0.2
 joblib==1.4.2
 Flask==3.0.3
 Flask-Cors==4.0.1
