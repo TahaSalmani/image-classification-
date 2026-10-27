@@ -212,6 +212,14 @@ class DataIngestion:
 
     def _flatten_chest_xray(self, destination: Path) -> None:
         nested = destination / "chest_xray"
+        # Some archives wrap the dataset in a redundant chest_xray/chest_xray.
+        while (
+            nested.is_dir()
+            and len(contents := list(nested.iterdir())) == 1
+            and contents[0].is_dir()
+            and contents[0].name == "chest_xray"
+        ):
+            nested = contents[0]
         if not nested.is_dir():
             return
         for item in nested.iterdir():
