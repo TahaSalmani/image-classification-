@@ -1,7 +1,8 @@
-# 2.15.x is the last line shipping Keras 2, which this codebase targets:
-# it still has tf.keras.preprocessing.image.ImageDataGenerator and can save/load .h5.
-# TF >= 2.16 defaults to Keras 3, where both are removed and the pipeline breaks.
-tensorflow-cpu==2.15.1
+# The served model (artifacts/training/model.h5) is a Keras 3 model trained on
+# TF 2.20, so both local serving and Docker need TF >= 2.16 (Keras 3).
+# The old DVC training stages (ImageDataGenerator, Keras 2) only ever ran on
+# Kaggle/Colab notebooks and are superseded by the standalone Kaggle notebook.
+tensorflow-cpu==2.20.0
 numpy==1.26.4
 pandas==2.2.3
 scipy==1.13.1

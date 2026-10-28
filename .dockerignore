@@ -14,7 +14,10 @@ notebooks
 research
 *.ipynb
 logs
-artifacts
+artifacts/*
+!artifacts/training
+artifacts/training/*
+!artifacts/training/model.h5
 .dvc/cache
 .dvc/tmp
 data

@@ -218,5 +218,9 @@ __marimo__/
 .streamlit/secrets.toml
 
 artifacts/*
+# the serving model is committed so Render can build it into the image
+!artifacts/training
+artifacts/training/*
+!artifacts/training/model.h5
 .venv/
 .idea/

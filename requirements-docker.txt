@@ -1,7 +1,7 @@
 # Serving-only subset of requirements.txt. Training/notebook tools (kaggle,
 # notebook, matplotlib, seaborn, scikit-learn, pandas) are intentionally absent.
 # The app adds src/ to sys.path, so the package does not need to be pip-installed.
-tensorflow-cpu==2.15.1
+tensorflow-cpu==2.20.0
 numpy==1.26.4
 scipy==1.13.1
 Pillow==10.4.0

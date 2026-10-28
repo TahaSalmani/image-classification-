@@ -44,8 +44,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> TensorFlow 2.15.1 (pinned in `requirements.txt`) requires **Python 3.9–3.11**. Python 3.12+
-> ships Keras 3 and cannot run this codebase as-is, so create the virtualenv with Python 3.11.
+> `requirements.txt` pins TensorFlow 2.20 (Keras 3), the version the served
+> `model.h5` was trained on; it needs **Python 3.9–3.13**. The legacy DVC training
+> and evaluation stages still rely on Keras 2 `ImageDataGenerator`, so running them
+> locally requires `tensorflow-cpu==2.15.1` on Python 3.11. Retraining currently
+> happens in a standalone Kaggle notebook.
 
 Data ingestion requires the Kaggle CLI and credentials at `~/.kaggle/kaggle.json`:
 
