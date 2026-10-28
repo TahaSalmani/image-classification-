@@ -592,6 +592,290 @@
       line-height: 1.55;
     }
 
+    /* ---------- Advice ---------- */
+    .advice-panel {
+      grid-column: 1 / -1;
+      --a: #2563eb;
+      --a-soft: #eff6ff;
+      --a-border: #dbeafe;
+      --a-ink: #1e3a8a;
+    }
+
+    .advice-panel:nth-child(3) { animation-delay: .12s; }
+
+    .advice-panel[data-mode="likely_pneumonia"] {
+      --a: #dc2626;
+      --a-soft: #fef2f2;
+      --a-border: #fecaca;
+      --a-ink: #7f1d1d;
+    }
+
+    .advice-panel[data-mode="uncertain"] {
+      --a: #d97706;
+      --a-soft: #fffbeb;
+      --a-border: #fde68a;
+      --a-ink: #78350f;
+    }
+
+    .advice-panel[data-mode="likely_normal"] {
+      --a: #059669;
+      --a-soft: #ecfdf5;
+      --a-border: #a7f3d0;
+      --a-ink: #065f46;
+    }
+
+    .advice-loading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 2px 4px;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+
+    .advice-loading .scan-ring {
+      width: 26px;
+      height: 26px;
+      margin: 0;
+      border-width: 2px;
+      border-color: var(--a-border);
+      border-top-color: var(--a);
+    }
+
+    .advice-note {
+      margin: 0;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fafc;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .advice-lead {
+      padding: 18px;
+      border: 1px solid var(--a-border);
+      border-radius: 16px;
+      background: linear-gradient(180deg, var(--a-soft), #fff 85%);
+    }
+
+    .advice-mode {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 11px;
+      border: 1px solid var(--a-border);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--a);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .advice-mode::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--a);
+    }
+
+    .advice-lead h3 {
+      margin: 12px 0 8px;
+      font-size: 21px;
+      letter-spacing: -.02em;
+      color: var(--a-ink);
+    }
+
+    .advice-lead p {
+      margin: 0;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #475569;
+    }
+
+    .advice-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .advice-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .advice-block h4,
+    .emergency h4 {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+
+    .advice-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .advice-list li {
+      position: relative;
+      padding-left: 20px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #334155;
+    }
+
+    .advice-list li::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: .55em;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--a);
+      opacity: .75;
+    }
+
+    .advice-list .src {
+      display: block;
+      margin-top: 2px;
+      font-size: 11.5px;
+      color: #a3b0c2;
+    }
+
+    .explain {
+      padding: 16px;
+      border: 1px dashed var(--a-border);
+      border-radius: 14px;
+      background: #fbfdff;
+    }
+
+    .explain-tag {
+      display: inline-block;
+      margin-bottom: 8px;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--a);
+    }
+
+    .explain-text {
+      margin: 0;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #334155;
+    }
+
+    .explain-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 10px 0 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #475569;
+    }
+
+    .emergency {
+      padding: 16px;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      background: #fff5f5;
+    }
+
+    .emergency h4 { color: #b91c1c; }
+    .emergency .advice-list li { color: #7f1d1d; }
+    .emergency .advice-list li::before { background: #dc2626; opacity: 1; }
+    .emergency .advice-list .src { color: #cf9a9a; }
+
+    .source-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .source-list a {
+      font-size: 12.5px;
+      color: var(--accent);
+      text-decoration: none;
+      word-break: break-word;
+    }
+
+    .source-list a:hover { text-decoration: underline; }
+
+    .disclaimer {
+      margin: 0;
+      font-size: 11.5px;
+      line-height: 1.6;
+      color: #94a3b8;
+    }
+
+    .advice-details {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .advice-details summary {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .passage-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .passage {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .passage-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+      font-size: 11.5px;
+      color: #94a3b8;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .passage-top code { color: #475569; font-weight: 600; }
+
+    .passage p {
+      margin: 0;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #475569;
+    }
+
     /* ---------- Footer ---------- */
     footer {
       margin-top: auto;
@@ -611,6 +895,7 @@
       .layout { grid-template-columns: 1fr; }
       .result-panel { min-height: 0; }
       .empty, .scanning { padding: 26px 8px; }
+      .advice-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 560px) {
@@ -752,6 +1037,65 @@
 
         <div class="alert" id="errorBox" role="alert" hidden></div>
       </section>
+
+      <section class="panel advice-panel" id="advicePanel" aria-labelledby="adviceTitle" hidden>
+        <div class="panel-head">
+          <span class="index" aria-hidden="true">03</span>
+          <div>
+            <h2 id="adviceTitle">What to do next</h2>
+            <p>General information, not a diagnosis of this scan.</p>
+          </div>
+        </div>
+
+        <div class="advice-loading" id="adviceLoading" hidden>
+          <div class="scan-ring" aria-hidden="true"></div>
+          <span>Looking up guidance…</span>
+        </div>
+
+        <p class="advice-note" id="adviceNote" hidden></p>
+
+        <div id="adviceBody" aria-live="polite" hidden>
+          <div class="advice-lead">
+            <span class="advice-mode" id="adviceMode">—</span>
+            <h3 id="adviceHeadline">—</h3>
+            <p id="adviceSummary"></p>
+          </div>
+
+          <div class="advice-grid">
+            <div class="advice-col">
+              <div class="explain">
+                <span class="explain-tag" id="explainTag">—</span>
+                <p class="explain-text" id="explainText"></p>
+                <ul class="explain-list" id="explainList" hidden></ul>
+              </div>
+
+              <div class="advice-block">
+                <h4>What to do</h4>
+                <ul class="advice-list" id="adviceActions"></ul>
+              </div>
+            </div>
+
+            <div class="advice-col">
+              <div class="emergency" id="redFlagsBlock" hidden>
+                <h4>Call 999 or go to A&amp;E if:</h4>
+                <ul class="advice-list" id="adviceRedFlags"></ul>
+              </div>
+
+              <div class="advice-block">
+                <h4>Sources</h4>
+                <ul class="source-list" id="adviceSources"></ul>
+              </div>
+
+              <p class="disclaimer" id="adviceDisclaimer"></p>
+            </div>
+          </div>
+
+          <details class="advice-details" id="adviceDetails" hidden>
+            <summary id="adviceDetailsSummary">Show retrieved passages</summary>
+            <ul class="passage-list" id="advicePassages"></ul>
+          </details>
+        </div>
+      </section>
     </main>
 
     <footer>
@@ -770,6 +1114,11 @@
       var MAX_BYTES = 8 * 1024 * 1024;
       var ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
       var MAX_SIDE = 1400;
+
+      // Must match HIGH_CONFIDENCE / LOW_CONFIDENCE in advice_logic.py, so the
+      // verdict badge and the advice card never disagree about a borderline scan.
+      var HIGH_CONFIDENCE = 0.75;
+      var LOW_CONFIDENCE = 0.40;
 
       var dropzone = document.getElementById("dropzone");
       var fileInput = document.getElementById("fileInput");
@@ -795,7 +1144,26 @@
       var rawResponse = document.getElementById("rawResponse");
       var errorBox = document.getElementById("errorBox");
 
-      var state = { file: null, previewUrl: null, busy: false };
+      var advicePanel = document.getElementById("advicePanel");
+      var adviceLoading = document.getElementById("adviceLoading");
+      var adviceNote = document.getElementById("adviceNote");
+      var adviceBody = document.getElementById("adviceBody");
+      var adviceMode = document.getElementById("adviceMode");
+      var adviceHeadline = document.getElementById("adviceHeadline");
+      var adviceSummary = document.getElementById("adviceSummary");
+      var explainTag = document.getElementById("explainTag");
+      var explainText = document.getElementById("explainText");
+      var explainList = document.getElementById("explainList");
+      var adviceActions = document.getElementById("adviceActions");
+      var redFlagsBlock = document.getElementById("redFlagsBlock");
+      var adviceRedFlags = document.getElementById("adviceRedFlags");
+      var adviceSources = document.getElementById("adviceSources");
+      var adviceDisclaimer = document.getElementById("adviceDisclaimer");
+      var adviceDetails = document.getElementById("adviceDetails");
+      var adviceDetailsSummary = document.getElementById("adviceDetailsSummary");
+      var advicePassages = document.getElementById("advicePassages");
+
+      var state = { file: null, previewUrl: null, busy: false, adviceToken: 0 };
       var dragDepth = 0;
 
       function formatBytes(bytes) {
@@ -825,6 +1193,7 @@
         emptyState.hidden = true;
         scanning.hidden = true;
         resultView.hidden = true;
+        resetAdvice();
       }
 
       function resetResult() {
@@ -839,6 +1208,19 @@
         detailsToggle.textContent = "Show raw response";
         emptyState.hidden = false;
         clearError();
+        resetAdvice();
+      }
+
+      function resetAdvice() {
+        state.adviceToken += 1;
+        advicePanel.hidden = true;
+        advicePanel.removeAttribute("data-mode");
+        adviceLoading.hidden = true;
+        adviceNote.hidden = true;
+        adviceNote.textContent = "";
+        adviceBody.hidden = true;
+        adviceDetails.hidden = true;
+        adviceDetails.open = false;
       }
 
       function releasePreview() {
@@ -984,25 +1366,52 @@
         scanning.hidden = true;
         resultView.hidden = false;
 
+        var probability = pneumoniaProbability(item);
         var label = String(item.image || "Unknown").trim() || "Unknown";
         var lower = label.toLowerCase();
-        var verdict = lower.indexOf("pneumonia") !== -1
-          ? "pneumonia"
-          : (lower.indexOf("normal") !== -1 ? "normal" : "unknown");
+        var verdict;
+        var badge;
+        var title;
+        var text;
+
+        if (probability !== null) {
+          if (probability >= HIGH_CONFIDENCE) {
+            verdict = "pneumonia";
+            badge = "PNEUMONIA";
+            title = "Pneumonia detected";
+            text = "The model finds patterns consistent with pneumonia in this scan.";
+          } else if (probability >= LOW_CONFIDENCE) {
+            verdict = "unknown";
+            badge = "UNCERTAIN";
+            title = "Not conclusive";
+            text = "The model's score sits between the two thresholds, so this result should not be read as either normal or pneumonia.";
+          } else {
+            verdict = "normal";
+            badge = "NORMAL";
+            title = "No pneumonia detected";
+            text = "The model does not see patterns associated with pneumonia in this scan.";
+          }
+        } else if (lower.indexOf("pneumonia") !== -1) {
+          verdict = "pneumonia";
+          badge = label.toUpperCase();
+          title = "Pneumonia detected";
+          text = "The model finds patterns consistent with pneumonia in this scan.";
+        } else if (lower.indexOf("normal") !== -1) {
+          verdict = "normal";
+          badge = label.toUpperCase();
+          title = "No pneumonia detected";
+          text = "The model does not see patterns associated with pneumonia in this scan.";
+        } else {
+          verdict = "unknown";
+          badge = label.toUpperCase();
+          title = label;
+          text = "The model returned a label outside the expected Normal / Pneumonia classes.";
+        }
 
         resultView.setAttribute("data-verdict", verdict);
-        verdictBadge.textContent = label.toUpperCase();
-
-        if (verdict === "pneumonia") {
-          verdictTitle.textContent = "Pneumonia detected";
-          verdictText.textContent = "The model finds patterns consistent with pneumonia in this scan.";
-        } else if (verdict === "normal") {
-          verdictTitle.textContent = "No pneumonia detected";
-          verdictText.textContent = "The model does not see patterns associated with pneumonia in this scan.";
-        } else {
-          verdictTitle.textContent = label;
-          verdictText.textContent = "The model returned a label outside the expected Normal / Pneumonia classes.";
-        }
+        verdictBadge.textContent = badge;
+        verdictTitle.textContent = title;
+        verdictText.textContent = text;
 
         var confidence = Number(item.confidence);
         var hasConfidence = isFinite(confidence) && item.confidence !== null && item.confidence !== "";
@@ -1035,6 +1444,185 @@
         }
       }
 
+      /* ---------- Advice ---------- */
+
+      function pneumoniaProbability(item) {
+        var probs = item && item.probabilities;
+        if (probs && typeof probs === "object") {
+          var keys = Object.keys(probs);
+          for (var i = 0; i < keys.length; i += 1) {
+            if (/pneumonia/i.test(keys[i])) {
+              var value = Number(probs[keys[i]]);
+              if (isFinite(value) && value >= 0 && value <= 1) return value;
+            }
+          }
+        }
+
+        var confidence = Number(item && item.confidence);
+        if (isFinite(confidence) && confidence >= 0 && confidence <= 1) {
+          var label = String(item.image || "").toLowerCase();
+          if (label.indexOf("pneumonia") !== -1) return confidence;
+          if (label.indexOf("normal") !== -1) return 1 - confidence;
+        }
+        return null;
+      }
+
+      function adviceItem(text, file) {
+        var li = document.createElement("li");
+        li.textContent = text;
+        if (typeof file === "string" && file) {
+          var src = document.createElement("span");
+          src.className = "src";
+          src.textContent = file;
+          li.appendChild(src);
+        }
+        return li;
+      }
+
+      function renderAdvice(data) {
+        var mode = typeof data.mode === "string" ? data.mode : "";
+        advicePanel.hidden = false;
+        advicePanel.setAttribute("data-mode", mode);
+        adviceLoading.hidden = true;
+        adviceNote.hidden = true;
+        adviceBody.hidden = false;
+
+        adviceMode.textContent = data.label || mode || "Guidance";
+        adviceHeadline.textContent = data.headline || "";
+        adviceSummary.textContent = data.summary || "";
+
+        explainText.textContent = typeof data.explanation === "string" ? data.explanation : "";
+        explainTag.textContent = data.explanation_source === "llm"
+          ? "AI-worded explanation"
+          : "Standard explanation";
+
+        var details = data.explanation_details && typeof data.explanation_details === "object"
+          ? data.explanation_details
+          : null;
+        var whatToDo = details && Array.isArray(details.what_to_do) ? details.what_to_do : [];
+        explainList.replaceChildren();
+        whatToDo.forEach(function (line) {
+          if (typeof line === "string" && line.trim()) {
+            var li = document.createElement("li");
+            li.textContent = line;
+            explainList.appendChild(li);
+          }
+        });
+        explainList.hidden = explainList.childElementCount === 0;
+
+        adviceActions.replaceChildren();
+        var lastActionFile = null;
+        (Array.isArray(data.actions) ? data.actions : []).forEach(function (item) {
+          if (!item || typeof item.text !== "string") return;
+          var file = typeof item.file === "string" ? item.file : "";
+          adviceActions.appendChild(adviceItem(item.text, file === lastActionFile ? "" : file));
+          lastActionFile = file;
+        });
+
+        adviceRedFlags.replaceChildren();
+        var lastFlagFile = null;
+        (Array.isArray(data.red_flags) ? data.red_flags : []).forEach(function (item) {
+          if (!item || typeof item.text !== "string") return;
+          var file = typeof item.file === "string" ? item.file : "";
+          adviceRedFlags.appendChild(adviceItem(item.text, file === lastFlagFile ? "" : file));
+          lastFlagFile = file;
+        });
+        redFlagsBlock.hidden = adviceRedFlags.childElementCount === 0;
+
+        adviceSources.replaceChildren();
+        var seen = Object.create(null);
+        (Array.isArray(data.sources) ? data.sources : []).forEach(function (url) {
+          if (typeof url !== "string" || !/^https?:\/\//i.test(url) || seen[url]) return;
+          seen[url] = true;
+          var li = document.createElement("li");
+          var link = document.createElement("a");
+          link.href = url;
+          link.textContent = url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          li.appendChild(link);
+          adviceSources.appendChild(li);
+        });
+
+        adviceDisclaimer.textContent = typeof data.disclaimer === "string" ? data.disclaimer : "";
+
+        advicePassages.replaceChildren();
+        (Array.isArray(data.passages) ? data.passages : []).forEach(function (passage) {
+          if (!passage || typeof passage.text !== "string") return;
+          var li = document.createElement("li");
+          li.className = "passage";
+
+          var top = document.createElement("div");
+          top.className = "passage-top";
+
+          var name = document.createElement("code");
+          name.textContent = String(passage.file || passage.chunk_id || "passage");
+
+          var score = document.createElement("span");
+          var value = Number(passage.score);
+          score.textContent = isFinite(value) ? value.toFixed(2) : "";
+
+          top.append(name, score);
+
+          var text = document.createElement("p");
+          text.textContent = passage.text;
+
+          li.append(top, text);
+          advicePassages.appendChild(li);
+        });
+
+        if (advicePassages.childElementCount > 0) {
+          adviceDetails.hidden = false;
+          adviceDetails.open = false;
+          adviceDetailsSummary.textContent =
+            "Show retrieved passages (" + advicePassages.childElementCount + ")";
+        } else {
+          adviceDetails.hidden = true;
+        }
+      }
+
+      async function loadAdvice(item) {
+        var probability = pneumoniaProbability(item);
+        resetAdvice();
+        if (probability === null) return;
+
+        var token = state.adviceToken;
+        advicePanel.hidden = false;
+        adviceLoading.hidden = false;
+
+        var controller = new AbortController();
+        var timer = setTimeout(function () { controller.abort(); }, 25000);
+
+        try {
+          var response = await fetch("/advice", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pneumonia_probability: probability }),
+            signal: controller.signal
+          });
+
+          var text = await response.text();
+          var data = null;
+          try { data = text ? JSON.parse(text) : null; } catch (err) { data = null; }
+
+          if (token !== state.adviceToken) return;
+          if (!response.ok || !data || typeof data !== "object") {
+            throw new Error("advice unavailable");
+          }
+
+          renderAdvice(data);
+        } catch (err) {
+          if (token !== state.adviceToken) return;
+          adviceLoading.hidden = true;
+          adviceNote.textContent = err.name === "AbortError"
+            ? "Guidance is taking longer than usual. The model result above is unaffected."
+            : "Guidance is temporarily unavailable. The model result above is unaffected.";
+          adviceNote.hidden = false;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
       async function predict() {
         if (!state.file || state.busy) return;
 
@@ -1042,6 +1630,7 @@
         setBusy(true);
         emptyState.hidden = true;
         resultView.hidden = true;
+        resetAdvice();
         scanning.hidden = false;
 
         var controller = new AbortController();
@@ -1070,6 +1659,7 @@
           }
 
           renderResult(item);
+          loadAdvice(item);
         } catch (err) {
           if (err.name === "AbortError") {
             showError("The request timed out. Please try again.");

@@ -260,6 +260,21 @@ The layer fails closed by design —
 `pip install anthropic` is only needed where the layer is actually used; the tests run against a
 fake client and pass without the SDK, the key or the network.
 
+### In the browser
+
+After `/predict` the page posts the pneumonia probability to `/advice` and renders the card in its
+own panel (03), visually separate from the model verdict so the guidance is never mistaken for a
+reading of the image. The verdict badge uses the same three bands as the card, so a 45% scan says
+"Not conclusive" in both places instead of "No pneumonia detected" above "cannot call this scan
+either way".
+
+Everything from the API is written with `textContent` and built with `createElement` — no
+`innerHTML` anywhere — so a model reply containing markup stays literal text. Each "what to do"
+and emergency line carries the knowledge file it came from, the sources section links the original
+NHS / CDC / MedlinePlus pages, and a collapsed "Show retrieved passages" list exposes the exact
+passages and TF-IDF scores behind the explanation. If `/advice` fails, the verdict stays on screen
+and the panel shows one line saying guidance is unavailable.
+
 ## Training
 
 The pipeline is DVC-orchestrated:
