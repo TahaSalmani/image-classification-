@@ -1,135 +1,204 @@
-# image-classification-
+# Chest X-ray Pneumonia Classifier
 
-# Lung Disease (Pneumonia) Detection
+A VGG16 transfer-learning model that classifies chest X-ray images as **Normal** or **Pneumonia**, served through a Flask web app and deployed as a Docker image.
 
-🔗 **Live Demo:** https://image-classification-hm8d.onrender.com
+🔗 **Live demo:** https://image-classification-hm8d.onrender.com
 
-A deep-learning image classification project that detects **Pneumonia** vs **Normal** lungs from chest X-ray images, built with a VGG16 transfer-learning model, orchestrated as a DVC pipeline, and served through a Flask web app.
+> **Research demo only.** This is not a medical device. Predictions can be wrong and must never be used for clinical decisions.
 
-> Research demo only. This is not a medical device and must not be used for clinical decisions.
+---
 
-## Pipeline
+## Highlights
+
+- **92% accuracy / 0.984 AUC** on the official 624-image test split
+- Patient-grouped validation split, so the same patient never leaks between train and validation
+- Class weighting to counter the 1:2.9 NORMAL-to-PNEUMONIA imbalance (98.5% pneumonia sensitivity)
+- Reproducible 4-stage DVC pipeline (ingestion → base model → training → evaluation)
+- Preprocessing is `tf.keras.applications.vgg16.preprocess_input` everywhere: training, evaluation and serving
+- Slim 58.9 MB Keras 3 model baked into the Docker image — no external artifact store needed at runtime
+
+## Results
+
+Evaluated on the official `test/` split (624 images: 234 NORMAL, 390 PNEUMONIA), which is never seen during training or validation:
+
+| Metric | Value |
+|---|---|
+| Accuracy | 0.920 |
+| AUC | 0.984 |
+| Precision | 0.924 |
+| Recall | 0.920 |
+| F1 | 0.918 |
+| Loss | 0.223 |
+
+Confusion matrix (rows = true `NORMAL`, `PNEUMONIA`; columns = predicted):
+
+|  | Normal | Pneumonia |
+|---|---|---|
+| **Normal** | 190 | 44 |
+| **Pneumonia** | 6 | 384 |
+
+The model catches 384 of 390 pneumonia cases; the remaining errors are 44 false positives, which is the safer failure direction for a screening aid.
+
+## How it works
 
 ```
-config/config.yaml + params.yaml
-        |
-        v
-Stage 1  data_ingestion      Kaggle ZIP -> artifacts/data_ingestion/{train,test,val} + manifest.json
-Stage 2  prepare_base_model  VGG16 (ImageNet, no top) -> GlobalAveragePooling + Dense(2)
-Stage 3  training            patient-grouped split, augmentation, class weights -> best checkpoint -> model.h5
-Stage 4  evaluation          official test split -> scores.json (accuracy, AUC, precision, recall, F1)
-        |
-        v
-DVC (dvc.lock + DagsHub remote) -> Flask + gunicorn -> Docker
+                     ┌──────────────────────────────┐
+  Kaggle archive ──▶ │ 1. data_ingestion            │  train / test / val + manifest.json
+                     └──────────────────────────────┘
+                     ┌──────────────────────────────┐
+  ImageNet weights ─▶│ 2. prepare_base_model        │  VGG16 (no top) + GAP + Dropout + Dense(2)
+                     └──────────────────────────────┘
+                     ┌──────────────────────────────┐
+                     │ 3. training                  │  frozen first 15 layers, augmentation,
+                     │                              │  class weights, best-val checkpoint
+                     └──────────────────────────────┘
+                     ┌──────────────────────────────┐
+  624-image test ──▶ │ 4. evaluation                │  scores.json
+                     └──────────────────────────────┘
+                                │
+                                ▼
+                 Flask + gunicorn  ──▶  Docker  ──▶  Render
 ```
 
-The ingestion stage verifies the archive with `zipfile.testzip()`, optionally checks a SHA256
-(`data_ingestion.verify_sha256`), extracts atomically, rejects unsafe archive paths, validates the
-exact class counts in `config/config.yaml`, and writes `manifest.json` before swapping the splits
-into place. After the first successful run, copy `archive_sha256` from `manifest.json` into
-`config.yaml` to pin the download. `keep_zip` defaults to `false`, so the archive is removed after
-extraction. Test and validation splits are DVC-tracked, and evaluation uses the official test set.
-Training does not use the 16-image `val/` split (it is too small to measure anything); stage 3
-builds a patient-grouped validation set from `train/` instead.
+**Model:** `VGG16(include_top=False, weights="imagenet")` with the first 15 layers frozen, then `GlobalAveragePooling2D → Dropout(0.3) → Dense(2, softmax)`. 14.7M parameters, 224×224×3 input, Adam at 1e-4, batch 16, 10 epochs, categorical cross-entropy.
 
-## Setup
+**Data:** [Chest X-Ray Images (Pneumonia)](https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia) — 5,875 images (train 1,341 NORMAL / 3,875 PNEUMONIA, test 234 / 390, val 8 / 8). The 16-image `val/` split is too small to measure anything, so training builds a patient-grouped 20% validation set out of `train/` instead, and early stopping restores the best weights.
+
+## Project structure
+
+```
+├── app.py                      Flask app: /, /health, /predict
+├── gunicorn.conf.py            gunicorn config, loads the model in post_worker_init
+├── Dockerfile                  serving image (python:3.11-slim + requirements-docker.txt)
+├── config/config.yaml          paths and expected dataset counts
+├── params.yaml                 image size, epochs, batch size, LR, freeze depth
+├── dvc.yaml                    the four pipeline stages with deps/outs/metrics
+├── artifacts/training/model.h5 committed serving model (58.9 MB, Keras 3)
+├── templates/index.html        single-page UI
+├── src/cnnclassifier/
+│   ├── components/             data_ingestion, prepare_base_model, training,
+│   │                           prepare_callbacks, evaluation
+│   ├── pipeline/               stage_01…stage_04 + predict.py (inference)
+│   ├── config/, entity/        typed configuration objects
+│   └── utils/common.py         yaml/json helpers, base64 image decoding
+└── research/                   historical notebooks, not used by the pipeline
+```
+
+## Quick start
+
+### Docker (recommended)
+
+```bash
+docker build -t chest-xray .
+docker run --rm -p 8080:8080 chest-xray
+```
+
+Open http://localhost:8080 and upload a chest X-ray. The model is already inside the image, so the container needs no credentials and no network access at startup.
+
+The first build downloads ~1 GB of wheels; if PyPI is slow or blocked on your network, point it at a mirror:
+
+```bash
+docker build --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple -t chest-xray .
+```
+
+### Local Python
 
 ```bash
 python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/macOS
-source .venv/bin/activate
-
+# Windows: .venv\Scripts\activate    Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
+python app.py            # or: gunicorn -c gunicorn.conf.py app:app
 ```
 
-> `requirements.txt` pins TensorFlow 2.20 (Keras 3), the version the served
-> `model.h5` was trained on; it needs **Python 3.9–3.13**. The legacy DVC training
-> and evaluation stages still rely on Keras 2 `ImageDataGenerator`, so running them
-> locally requires `tensorflow-cpu==2.15.1` on Python 3.11. Retraining currently
-> happens in a standalone Kaggle notebook.
+`requirements.txt` pins TensorFlow 2.20 (Keras 3) — the version the committed model was trained on — and needs **Python 3.9–3.13**.
 
-Data ingestion requires the Kaggle CLI and credentials at `~/.kaggle/kaggle.json`:
+## API
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | Web UI |
+| `GET` | `/health` | Liveness + whether the model is loaded |
+| `POST` | `/predict` | Classify one image |
+
+`/health`:
+
+```json
+{"model_loaded": true, "model_path": "artifacts/training/model.h5", "status": "ok"}
+```
+
+`/predict` takes a JSON body with a base64 string (raw or `data:` URI, up to 10 MB decoded):
 
 ```bash
-dvc repro          # runs all four stages
-# or run a single stage:
-python src/cnnclassifier/pipeline/stage_01_data_ingestion.py
+curl -X POST http://localhost:8080/predict \
+  -H "Content-Type: application/json" \
+  -d "{\"image\": \"$(base64 -w0 scan.jpeg)\"}"
 ```
 
-Model and data artifacts live on DagsHub. Configure the remote credentials once
-(they are stored locally, not in Git):
+```json
+[
+  {
+    "image": "Pneumonia",
+    "confidence": 0.841,
+    "probabilities": {"Normal": 0.159, "Pneumonia": 0.841}
+  }
+]
+```
+
+Uploaded images are written to a temp file, scored, and deleted immediately.
+
+## Training
+
+The pipeline is DVC-orchestrated:
+
+```bash
+dvc repro                        # all four stages
+python src/cnnclassifier/pipeline/stage_01_data_ingestion.py   # a single stage
+```
+
+Stage 1 downloads the Kaggle dataset (needs `~/.kaggle/kaggle.json`), verifies the archive, extracts it atomically, validates the class counts against `config/config.yaml` and writes `manifest.json`. Stage 4 writes `scores.json` with accuracy, AUC, precision, recall, F1 and the confusion matrix.
+
+**Retraining happens on Kaggle.** The current model was trained in a standalone Kaggle notebook (TF 2.20 / Keras 3, 2×T4) and then committed here: the original 110 MB `.h5` was re-saved with `include_optimizer=False` to 58.9 MB so it fits under GitHub's file-size limit, with bit-identical predictions. Two practical notes:
+
+- The legacy stages 3–4 in `src/` still use Keras 2 `ImageDataGenerator`; running `dvc repro` locally requires `tensorflow-cpu==2.15.1` on Python 3.11. The notebook is the supported path for new training runs.
+- When you export a model for serving, strip the optimizer, then confirm `/predict` still returns the same probabilities for a known image before deploying.
+
+Artifacts (dataset, older models) are tracked with DVC against a DagsHub remote. Credentials are stored locally, never in Git:
 
 ```bash
 dvc remote modify origin --local auth basic
 dvc remote modify origin --local user "$DAGSHUB_USERNAME"
 dvc remote modify origin --local password "$DAGSHUB_TOKEN"
-
 dvc pull
 ```
 
-After a successful `dvc repro`, publish the new data/model artifacts with `dvc push`.
+## Configuration
 
-## Serving
+Environment variables read by the app:
 
-```bash
-python app.py
-# or production-style:
-gunicorn -c gunicorn.conf.py app:app
-```
+| Variable | Default | Purpose |
+|---|---|---|
+| `MODEL_PATH` | `artifacts/training/model.h5` | Model location |
+| `PULL_MODEL_ON_START` | `1` | `dvc pull` the model at startup if it is missing; set `0` when the model is baked or mounted |
+| `DAGSHUB_USERNAME`, `DAGSHUB_TOKEN` | — | Credentials for that startup pull |
+| `PORT` | `8080` | Port for gunicorn / the dev server |
+| `GUNICORN_THREADS` | `2` | gunicorn threads |
+| `GUNICORN_TIMEOUT` | `180` | gunicorn worker timeout |
 
-Endpoints:
+Hyperparameters live in `params.yaml` (`FREEZE_TILL`, `EPOCHS`, `BATCH_SIZE`, `LEARNING_RATE`, `IMAGE_SIZE`), dataset paths and expected counts in `config/config.yaml`.
 
-- `GET /` — web UI
-- `GET /health` — liveness and model status
-- `POST /predict` — JSON body `{"image": "<base64>"}`; returns the class, confidence, and per-class probabilities
+## Docker & deployment
 
-Environment variables:
+- `requirements-docker.txt` is a serving-only subset (no Kaggle, notebooks, matplotlib, scikit-learn), keeping the image small.
+- gunicorn runs with `workers = 1` and `preload_app = False`; the model loads once in `post_worker_init` to avoid the TensorFlow fork deadlock that `--preload` causes.
+- `.dockerignore` excludes everything under `artifacts/` except the serving model, so the image ships the model but no datasets or checkpoints.
+- On Render, pushing to `main` builds and deploys automatically. Give the service **at least 1 GB RAM** — VGG16 plus TensorFlow does not fit comfortably in 512 MB.
 
-| Variable | Purpose |
-|---|---|
-| `MODEL_PATH` | Model path (default `artifacts/training/model.h5`) |
-| `DAGSHUB_USERNAME`, `DAGSHUB_TOKEN` | Credentials for the startup `dvc pull` |
-| `PULL_MODEL_ON_START` | Set to `0` to skip the startup pull |
-| `PORT` | Port for gunicorn or the Flask dev server (default `8080`) |
-| `GUNICORN_THREADS`, `GUNICORN_TIMEOUT` | gunicorn tuning (defaults `2` and `180`) |
+## Limitations
 
-## Docker
+- Binary NORMAL/PNEUMONIA classification only — no other thoracic findings, no localization, no severity estimate.
+- Trained on a single pediatric dataset (Guangzhou Women and Children's Medical Center); performance on adult or out-of-distribution scans will be lower.
+- 44 of 234 normal test images are flagged as pneumonia, so a positive result is a prompt for expert review, not a diagnosis.
 
-```bash
-docker build -t cnn-xray .
-docker run --rm -p 8080:8080 cnn-xray
-```
+## License
 
-If PyPI is slow or blocked from your network, point the build at a mirror (the default is
-`https://pypi.org/simple`):
-
-```bash
-docker build --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple -t cnn-xray .
-```
-
-The image installs the serving-only dependency set from `requirements-docker.txt`, so training
-and notebook tooling do not inflate the runtime image. It runs gunicorn without `--preload`; the
-model is loaded once per worker in `post_worker_init`. This avoids the TensorFlow fork deadlock
-caused by preloading.
-
-At startup the container pulls the model from DagsHub before gunicorn binds the port. Give the
-service enough time for that pull, or bake/mount the model at `MODEL_PATH` and set
-`PULL_MODEL_ON_START=0`. A real VGG16 model plus TensorFlow does not fit comfortably in a 512 MB
-instance; use at least 1 GB of RAM and keep `workers = 1`.
-
-## Important
-
-The previous model artifacts were trained with plain `1/255` rescaling. Training, evaluation, and
-prediction now all use `tf.keras.applications.vgg16.preprocess_input`, so the model must be
-retrained (and the DVC artifacts regenerated) before deploying the new pipeline.
-
-The old artifacts are also not a usable baseline: `dvc.lock` records only **192 training images**,
-5 epochs, LR 0.01, and a fully frozen backbone. The current model on DagsHub and the live demo
-were produced by that run, so poor predictions from them are expected. Evaluate any new model on
-the official 624-image `test/` split (`scores.json`) before deploying it.
-
-The stale `dvc.lock` from the pre-fix pipeline was removed, and `scores.json` is generated by
-stage 4. Run `dvc repro` once with Kaggle credentials to regenerate both; the notebooks under
-`research/` are historical experiments and are not used by the pipeline.
+Released for educational and research use. The dataset carries its own license — check the Kaggle page before redistributing the images.
