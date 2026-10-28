@@ -77,8 +77,10 @@ The model catches 384 of 390 pneumonia cases; the remaining errors are 44 false 
 ├── knowledge/                  sourced pneumonia passages, SOURCE: on line 1
 ├── templates/index.html        single-page UI
 ├── scripts/rag_search.py       query the knowledge base from the CLI
-├── tests/test_rag.py           knowledge-base and retriever tests (unittest)
+├── scripts/advice_preview.py   print the three advice cards
+├── tests/                      knowledge-base, retriever and advice tests
 ├── src/cnnclassifier/
+│   ├── advice_logic.py         three fixed advice modes + LLM fallback text
 │   ├── components/             data_ingestion, prepare_base_model, training,
 │   │                           prepare_callbacks, evaluation
 │   ├── pipeline/               stage_01…stage_04 + predict.py (inference)
@@ -173,6 +175,31 @@ python -m unittest discover -s tests -v                          # 14 checks, no
 `TfidfVectorizer` here uses a custom `analyzer` that lowercases, merges `x-ray`/`x ray`/`xray`,
 drops English stopwords, strips common suffixes, and emits unigrams plus bigrams. Without the
 suffix stripper, "what causes pneumonia" misses the causes passage because it says "caused".
+
+## Advice modes
+
+`src/cnnclassifier/advice_logic.py` turns a prediction into one of three fixed cards, and it runs
+with no network, no model API and no key:
+
+| Mode | Condition | Message |
+|---|---|---|
+| `likely_pneumonia` | p ≥ 0.75 | seek care today; the score is not a diagnosis |
+| `uncertain` | 0.40 ≤ p < 0.75 | the score carries no weight either way |
+| `likely_normal` | p < 0.40 | a negative score is not a clean bill of health |
+
+Every quoted sentence and every "what to do" line is copied from a `knowledge/` file and tagged
+with the file it came from; a test fails if any of them stops matching the source verbatim. The
+emergency red flags are shown in all three modes. When the optional language-model explanation is
+missing, failed or rate-limited, the card falls back to a fixed sentence and the rest of the page
+is unaffected.
+
+The thresholds are a product decision, not a validated operating point — the model has no
+calibration study behind it.
+
+```bash
+python scripts/advice_preview.py            # all three cards
+python scripts/advice_preview.py -p 0.55    # one card, --json for machine output
+```
 
 ## Training
 
