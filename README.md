@@ -67,7 +67,7 @@ The model catches 384 of 390 pneumonia cases; the remaining errors are 44 false 
 ## Project structure
 
 ```
-├── app.py                      Flask app: /, /health, /predict
+├── app.py                      Flask app: /, /health, /predict, /advice
 ├── gunicorn.conf.py            gunicorn config, loads the model in post_worker_init
 ├── Dockerfile                  serving image (python:3.11-slim + requirements-docker.txt)
 ├── config/config.yaml          paths and expected dataset counts
@@ -81,6 +81,8 @@ The model catches 384 of 390 pneumonia cases; the remaining errors are 44 false 
 ├── tests/                      knowledge-base, retriever and advice tests
 ├── src/cnnclassifier/
 │   ├── advice_logic.py         three fixed advice modes + LLM fallback text
+│   ├── advice_service.py       prediction → mode → retrieval → optional LLM → JSON
+│   ├── llm.py                  optional Claude layer, fails closed to None
 │   ├── components/             data_ingestion, prepare_base_model, training,
 │   │                           prepare_callbacks, evaluation
 │   ├── pipeline/               stage_01…stage_04 + predict.py (inference)
@@ -123,13 +125,20 @@ python app.py            # or: gunicorn -c gunicorn.conf.py app:app
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/` | Web UI |
-| `GET` | `/health` | Liveness + whether the model is loaded |
+| `GET` | `/health` | Liveness, whether the model is loaded, whether `/advice` and the LLM layer are active |
 | `POST` | `/predict` | Classify one image |
+| `POST` | `/advice` | Advice card for a probability (optionally rephrased by the LLM) |
 
 `/health`:
 
 ```json
-{"model_loaded": true, "model_path": "artifacts/training/model.h5", "status": "ok"}
+{
+  "advice_endpoint": true,
+  "llm_enabled": false,
+  "model_loaded": true,
+  "model_path": "artifacts/training/model.h5",
+  "status": "ok"
+}
 ```
 
 `/predict` takes a JSON body with a base64 string (raw or `data:` URI, up to 10 MB decoded):
@@ -151,6 +160,40 @@ curl -X POST http://localhost:8080/predict \
 ```
 
 Uploaded images are written to a temp file, scored, and deleted immediately.
+
+`/advice` takes the pneumonia probability from `/predict` and returns the advice card:
+
+```bash
+curl -X POST http://localhost:8080/advice \
+  -H "Content-Type: application/json" \
+  -d "{\"pneumonia_probability\": 0.84}"
+```
+
+```json
+{
+  "pneumonia_probability": 0.84,
+  "mode": "likely_pneumonia",
+  "label": "…",
+  "headline": "…",
+  "summary": "…",
+  "quotes": [{"text": "…", "file": "01-symptoms-nhs.md"}],
+  "actions": [{"text": "…", "file": "03-when-to-get-urgent-advice-nhs.md"}],
+  "red_flags": [{"text": "…", "file": "02-emergency-warning-signs-nhs.md"}],
+  "citations": ["01-symptoms-nhs.md", "…"],
+  "sources": ["https://www.nhs.uk/…", "…"],
+  "disclaimer": "…",
+  "explanation": "…",
+  "explanation_source": "fallback",
+  "passages": [{"chunk_id": "…", "file": "…", "text": "…", "sources": ["…"], "score": 0.25}]
+}
+```
+
+Only `pneumonia_probability` is required; it must be a finite number in `[0, 1]` — anything else is a
+`400`. `explanation_source` is `llm` only when a validated model reply exists, otherwise the fixed
+fallback sentence is returned with `200` and the card is unchanged. The model call is cached per
+mode + context, so repeated requests for the same score cost nothing and cannot be used to burn the
+API quota. `passages` lists the retrieved knowledge-base chunks behind the explanation, which makes
+the response auditable without exposing the prompt.
 
 ## Knowledge base and retrieval
 
@@ -201,6 +244,22 @@ python scripts/advice_preview.py            # all three cards
 python scripts/advice_preview.py -p 0.55    # one card, --json for machine output
 ```
 
+### Optional LLM layer
+
+`src/cnnclassifier/llm.py` can ask Claude Haiku to rewrite the same facts in plainer language. It
+is strictly additive: the card, its quotes and the sources come from `advice_logic.py` either way.
+The layer fails closed by design —
+
+- no SDK installed, or no `ANTHROPIC_API_KEY` → the module still imports and returns `None`
+- 10 s timeout and **zero** retries, because gunicorn runs one worker here and a stalled request
+  would freeze image uploads too
+- malformed JSON, out-of-range source indices, over-long or non-string fields → `None`
+- HTML is stripped server-side, so a model reply cannot inject markup into the page
+- results are cached per mode + context hash, so the three cards cost at most three calls
+
+`pip install anthropic` is only needed where the layer is actually used; the tests run against a
+fake client and pass without the SDK, the key or the network.
+
 ## Training
 
 The pipeline is DVC-orchestrated:
@@ -238,12 +297,16 @@ Environment variables read by the app:
 | `PORT` | `8080` | Port for gunicorn / the dev server |
 | `GUNICORN_THREADS` | `2` | gunicorn threads |
 | `GUNICORN_TIMEOUT` | `180` | gunicorn worker timeout |
+| `ANTHROPIC_API_KEY` | — | Optional: enables the LLM rephrasing layer. Unset means the fixed fallback text is shown and nothing else changes |
+| `LLM_MODEL` | `claude-haiku-5-5` | Model used for that rephrasing |
+| `KNOWLEDGE_DIR` | `knowledge/` | Where the sourced passages are read from |
 
 Hyperparameters live in `params.yaml` (`FREEZE_TILL`, `EPOCHS`, `BATCH_SIZE`, `LEARNING_RATE`, `IMAGE_SIZE`), dataset paths and expected counts in `config/config.yaml`.
 
 ## Docker & deployment
 
-- `requirements-docker.txt` is a serving-only subset (no Kaggle, notebooks, matplotlib, scikit-learn), keeping the image small.
+- `requirements-docker.txt` is a serving-only subset (no Kaggle, notebooks, matplotlib), plus
+  `scikit-learn` for retrieval and `anthropic` for the optional LLM layer.
 - gunicorn runs with `workers = 1` and `preload_app = False`; the model loads once in `post_worker_init` to avoid the TensorFlow fork deadlock that `--preload` causes.
 - `.dockerignore` excludes everything under `artifacts/` except the serving model, so the image ships the model but no datasets or checkpoints.
 - On Render, pushing to `main` builds and deploys automatically. Give the service **at least 1 GB RAM** — VGG16 plus TensorFlow does not fit comfortably in 512 MB.

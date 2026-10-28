@@ -24,6 +24,14 @@ from cnnclassifier.pipeline.predict import (
 )
 from cnnclassifier.utils.common import decodeimage
 
+try:
+    from cnnclassifier import llm as llm_layer
+    from cnnclassifier.advice_service import handle_advice_request
+except Exception as error:  # e.g. scikit-learn missing from a slim image
+    print(f"WARNING: /advice disabled: {error}", flush=True)
+    llm_layer = None
+    handle_advice_request = None
+
 MAX_BASE64_CHARS = 14 * 1024 * 1024
 
 
@@ -100,8 +108,18 @@ def health():
             "status": "ok",
             "model_loaded": is_model_loaded(),
             "model_path": MODEL_PATH,
+            "advice_endpoint": handle_advice_request is not None,
+            "llm_enabled": bool(llm_layer and llm_layer.available()),
         }
     )
+
+
+@app.route("/advice", methods=["POST"])
+def advice_route():
+    if handle_advice_request is None:
+        return jsonify({"error": "advice is not available on this server"}), 503
+    body, status = handle_advice_request(request.get_json(silent=True))
+    return jsonify(body), status
 
 
 @app.route("/predict", methods=["POST"])
