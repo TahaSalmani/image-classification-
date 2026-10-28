@@ -13,8 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Lint code
-        run: echo "Linting repository"
+        run: python -m compileall -q app.py src scripts tests
+      # The knowledge-base / retriever tests need scikit-learn only: no
+      # TensorFlow, no model download, so the job stays under a minute.
+      - name: Install test dependencies
+        run: pip install scikit-learn==1.5.2
       - name: Run unit tests
-        run: echo "Running unit tests"
+        run: python -m unittest discover -s tests -v

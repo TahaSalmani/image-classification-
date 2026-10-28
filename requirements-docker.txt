@@ -1,10 +1,13 @@
 # Serving-only subset of requirements.txt. Training/notebook tools (kaggle,
-# notebook, matplotlib, seaborn, scikit-learn, pandas) are intentionally absent.
+# notebook, matplotlib, seaborn, pandas) are intentionally absent.
+# scikit-learn is here only for the TF-IDF retriever over knowledge/; it is
+# small compared with TensorFlow and needs no model download.
 # The app adds src/ to sys.path, so the package does not need to be pip-installed.
 tensorflow-cpu==2.20.0
 numpy==1.26.4
 scipy==1.13.1
 Pillow==10.4.0
+scikit-learn==1.5.2
 python-box==6.0.2
 PyYAML==6.0.2
 joblib==1.4.2

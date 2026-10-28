@@ -74,11 +74,15 @@ The model catches 384 of 390 pneumonia cases; the remaining errors are 44 false 
 ├── params.yaml                 image size, epochs, batch size, LR, freeze depth
 ├── dvc.yaml                    the four pipeline stages with deps/outs/metrics
 ├── artifacts/training/model.h5 committed serving model (58.9 MB, Keras 3)
+├── knowledge/                  sourced pneumonia passages, SOURCE: on line 1
 ├── templates/index.html        single-page UI
+├── scripts/rag_search.py       query the knowledge base from the CLI
+├── tests/test_rag.py           knowledge-base and retriever tests (unittest)
 ├── src/cnnclassifier/
 │   ├── components/             data_ingestion, prepare_base_model, training,
 │   │                           prepare_callbacks, evaluation
 │   ├── pipeline/               stage_01…stage_04 + predict.py (inference)
+│   ├── rag/                    chunker (markdown → passages) + TF-IDF retriever
 │   ├── config/, entity/        typed configuration objects
 │   └── utils/common.py         yaml/json helpers, base64 image decoding
 └── research/                   historical notebooks, not used by the pipeline
@@ -145,6 +149,30 @@ curl -X POST http://localhost:8080/predict \
 ```
 
 Uploaded images are written to a temp file, scored, and deleted immediately.
+
+## Knowledge base and retrieval
+
+`knowledge/` holds twelve short, sourced passages about pneumonia — symptoms, emergency and
+urgent-care criteria, self-care, treatment, causes, prevention, risk factors, diagnosis, and the
+fact that a normal-looking result does not rule pneumonia out. Every file begins with
+`SOURCE: <url>` and ends with the licence or attribution line, and the text is quoted from that
+page rather than written from memory. The sources are NHS, CDC, and MedlinePlus (NLM); the
+MedlinePlus A.D.A.M. encyclopedia entries are copyrighted and deliberately not used.
+
+Retrieval (stage 2 of the planned assistant) is plain TF-IDF from scikit-learn, not an embedding
+model: the corpus is ~20 passages, queries take well under a millisecond, and it costs about
+30 MB of RAM next to TensorFlow — the difference between fitting and not fitting on a 512 MB
+instance. `sentence-transformers` can replace it later behind the same interface.
+
+```bash
+python scripts/rag_search.py "when should I go to hospital"     # ranked passages + source URLs
+python scripts/rag_search.py --json -k 5 "can I take cough medicine"
+python -m unittest discover -s tests -v                          # 14 checks, no TensorFlow needed
+```
+
+`TfidfVectorizer` here uses a custom `analyzer` that lowercases, merges `x-ray`/`x ray`/`xray`,
+drops English stopwords, strips common suffixes, and emits unigrams plus bigrams. Without the
+suffix stripper, "what causes pneumonia" misses the causes passage because it says "caused".
 
 ## Training
 

@@ -12,6 +12,7 @@ __pycache__
 .ipynb_checkpoints
 notebooks
 research
+tests
 *.ipynb
 logs
 artifacts/*
