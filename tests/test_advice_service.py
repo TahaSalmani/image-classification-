@@ -21,7 +21,14 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from cnnclassifier import llm  # noqa: E402
 from cnnclassifier import advice_service as service  # noqa: E402
-from cnnclassifier.advice_logic import FALLBACK_TEXT  # noqa: E402
+from cnnclassifier.advice_logic import (  # noqa: E402
+    FALLBACK_TEXT,
+    HIGH_CONFIDENCE,
+    LOW_CONFIDENCE,
+)
+
+#: A score inside the "uncertain" band, wherever the calibrated thresholds are.
+MID_BAND = (LOW_CONFIDENCE + HIGH_CONFIDENCE) / 2
 
 GENERATED = {
     "summary": "The model scored this image high for pneumonia. Speak to a clinician today.",
@@ -38,7 +45,7 @@ class ModeTests(unittest.TestCase):
         self.assertEqual(payload["mode"], "likely_pneumonia")
 
     def test_middle_score_selects_uncertain_mode(self) -> None:
-        payload = service.advice_for(0.55, explain=False)
+        payload = service.advice_for(MID_BAND, explain=False)
         self.assertEqual(payload["mode"], "uncertain")
 
     def test_low_score_selects_normal_mode(self) -> None:

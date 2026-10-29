@@ -30,6 +30,9 @@ from cnnclassifier.advice_logic import (  # noqa: E402
 
 KNOWLEDGE = REPO_ROOT / "knowledge"
 
+#: A score inside the "uncertain" band, wherever the calibrated thresholds are.
+MID_BAND = (LOW_CONFIDENCE + HIGH_CONFIDENCE) / 2
+
 
 def _file_text(name: str) -> str:
     raw = (KNOWLEDGE / name).read_text(encoding="utf-8")
@@ -42,7 +45,7 @@ class ModeTests(unittest.TestCase):
         self.assertEqual(mode_for(HIGH_CONFIDENCE), "likely_pneumonia")
 
     def test_middle_band_is_uncertain(self) -> None:
-        self.assertEqual(mode_for(0.60), "uncertain")
+        self.assertEqual(mode_for(MID_BAND), "uncertain")
         self.assertEqual(mode_for(LOW_CONFIDENCE), "uncertain")
 
     def test_low_confidence_is_normal(self) -> None:
@@ -93,7 +96,7 @@ class PredictionParsingTests(unittest.TestCase):
 
 class AdviceContentTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.cards = [build_advice(probability) for probability in (0.95, 0.55, 0.05)]
+        self.cards = [build_advice(probability) for probability in (0.95, MID_BAND, 0.05)]
 
     def test_every_mode_is_covered(self) -> None:
         self.assertEqual(
@@ -164,7 +167,7 @@ class FallbackTests(unittest.TestCase):
     def test_json_ready(self) -> None:
         import json
 
-        payload = build_advice(0.55).as_dict()
+        payload = build_advice(MID_BAND).as_dict()
         round_tripped = json.loads(json.dumps(payload))
         self.assertEqual(round_tripped["mode"], "uncertain")
         self.assertIn("red_flags", round_tripped)

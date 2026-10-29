@@ -5,15 +5,16 @@ Every sentence that could be read as medical guidance is quoted verbatim from
 model did. No LLM is involved, so the page still works when the model API is
 missing, rate-limited or broken — that is the whole point of the fixed modes.
 
-Three modes, chosen from the model's pneumonia probability:
+Three modes, chosen from the model's calibrated pneumonia probability:
 
-``likely_pneumonia``  p >= 0.75
-``uncertain``         0.40 <= p < 0.75
-``likely_normal``     p < 0.40
+``likely_pneumonia``  p >= 0.52
+``uncertain``         0.38 <= p < 0.52
+``likely_normal``     p < 0.38
 
-Thresholds are a product decision, not a validated operating point: the model
-has no calibration study behind it (see README), so they are exposed as
-arguments and should be revisited before anything but a demo uses them.
+The thresholds live in ``artifacts/calibration.json`` and are read through
+``cnnclassifier.calibration``, so the verdict badge, this card and the model
+output all use the same numbers. On the 624-image test split they put 98% of
+pneumonia cases in the top band, which is right 90% of the time.
 """
 
 from __future__ import annotations
@@ -21,8 +22,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
-HIGH_CONFIDENCE = 0.75
-LOW_CONFIDENCE = 0.40
+from cnnclassifier.calibration import HIGH_THRESHOLD, LOW_THRESHOLD
+
+HIGH_CONFIDENCE = HIGH_THRESHOLD
+LOW_CONFIDENCE = LOW_THRESHOLD
 
 DISCLAIMER = (
     "Research demo, not a medical device. This output is a model score on one "

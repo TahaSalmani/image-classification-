@@ -39,6 +39,29 @@ Confusion matrix (rows = true `NORMAL`, `PNEUMONIA`; columns = predicted):
 
 The model catches 384 of 390 pneumonia cases; the remaining errors are 44 false positives, which is the safer failure direction for a screening aid.
 
+### Calibration
+
+Raw softmax scores are passed through temperature scaling (`artifacts/calibration.json`,
+`T = 1.589`), fitted by NLL on the same test split with patient-grouped 5-fold cross-validation
+(folds 1.47–1.72). It is a monotone transform, so accuracy and AUC are unchanged; held-out ECE moves
+only from 0.075 to 0.074 and Brier from 0.061 to 0.059. The honest reading: this model's confidence
+is roughly reasonable, and its remaining errors are not a calibration problem. What the fit does
+change is the number on screen — a raw 0.99 is reported as 0.96.
+
+The band thresholds come from the same run: the low threshold is the largest score whose lower band
+holds at most 2% pneumonia, the high threshold the lowest score whose upper band is at least 90%
+pneumonia. Across five held-out folds the top band stayed between 0.88 and 0.94 positive.
+
+| Band | Images (624) | Pneumonia rate |
+|---|---|---|
+| ≥ 0.52 `likely_pneumonia` | 425 | 90.1% — 383 of the 390 cases |
+| 0.38–0.52 `uncertain` | 20 | 20% |
+| < 0.38 `likely_normal` | 179 | 1.7% |
+
+That is a screening operating point: 98% sensitivity at 82% specificity. The 90% is the precision of
+the whole band, not the odds for a scan sitting exactly on 0.52. Thresholds and rates come from the
+same split, so treat them as a sanity check on the operating point, not independent validation.
+
 ## How it works
 
 ```
@@ -74,12 +97,14 @@ The model catches 384 of 390 pneumonia cases; the remaining errors are 44 false 
 ├── params.yaml                 image size, epochs, batch size, LR, freeze depth
 ├── dvc.yaml                    the four pipeline stages with deps/outs/metrics
 ├── artifacts/training/model.h5 committed serving model (58.9 MB, Keras 3)
+├── artifacts/calibration.json  temperature + band thresholds for serving
 ├── knowledge/                  sourced pneumonia passages, SOURCE: on line 1
 ├── templates/index.html        single-page UI
 ├── scripts/rag_search.py       query the knowledge base from the CLI
 ├── scripts/advice_preview.py   print the three advice cards
 ├── tests/                      knowledge-base, retriever and advice tests
 ├── src/cnnclassifier/
+│   ├── calibration.py          temperature scaling + band thresholds (from artifacts/calibration.json)
 │   ├── advice_logic.py         three fixed advice modes + LLM fallback text
 │   ├── advice_service.py       prediction → mode → retrieval → optional LLM → JSON
 │   ├── llm.py                  optional Claude layer, fails closed to None
@@ -153,11 +178,15 @@ curl -X POST http://localhost:8080/predict \
 [
   {
     "image": "Pneumonia",
-    "confidence": 0.841,
-    "probabilities": {"Normal": 0.159, "Pneumonia": 0.841}
+    "confidence": 0.741,
+    "probabilities": {"Normal": 0.259, "Pneumonia": 0.741},
+    "thresholds": {"high": 0.52, "low": 0.38}
   }
 ]
 ```
+
+The probabilities are calibrated (see [Calibration](#calibration)) and `thresholds` travels with each
+result so the page can pick its verdict band from the same numbers the advice card uses.
 
 Uploaded images are written to a temp file, scored, and deleted immediately.
 
@@ -166,12 +195,12 @@ Uploaded images are written to a temp file, scored, and deleted immediately.
 ```bash
 curl -X POST http://localhost:8080/advice \
   -H "Content-Type: application/json" \
-  -d "{\"pneumonia_probability\": 0.84}"
+  -d "{\"pneumonia_probability\": 0.93}"
 ```
 
 ```json
 {
-  "pneumonia_probability": 0.84,
+  "pneumonia_probability": 0.93,
   "mode": "likely_pneumonia",
   "label": "…",
   "headline": "…",
@@ -226,9 +255,9 @@ with no network, no model API and no key:
 
 | Mode | Condition | Message |
 |---|---|---|
-| `likely_pneumonia` | p ≥ 0.75 | seek care today; the score is not a diagnosis |
-| `uncertain` | 0.40 ≤ p < 0.75 | the score carries no weight either way |
-| `likely_normal` | p < 0.40 | a negative score is not a clean bill of health |
+| `likely_pneumonia` | p ≥ 0.52 | seek care today; the score is not a diagnosis |
+| `uncertain` | 0.38 ≤ p < 0.52 | the score carries no weight either way |
+| `likely_normal` | p < 0.38 | a negative score is not a clean bill of health |
 
 Every quoted sentence and every "what to do" line is copied from a `knowledge/` file and tagged
 with the file it came from; a test fails if any of them stops matching the source verbatim. The
@@ -236,8 +265,9 @@ emergency red flags are shown in all three modes. When the optional language-mod
 missing, failed or rate-limited, the card falls back to a fixed sentence and the rest of the page
 is unaffected.
 
-The thresholds are a product decision, not a validated operating point — the model has no
-calibration study behind it.
+The thresholds are not hand-picked: `artifacts/calibration.json` holds them, `cnnclassifier.calibration`
+loads them, and `/predict` returns them with every result so `/advice` and the page cannot disagree
+(see [Calibration](#calibration)).
 
 ```bash
 python scripts/advice_preview.py            # all three cards
@@ -264,9 +294,9 @@ fake client and pass without the SDK, the key or the network.
 
 After `/predict` the page posts the pneumonia probability to `/advice` and renders the card in its
 own panel (03), visually separate from the model verdict so the guidance is never mistaken for a
-reading of the image. The verdict badge uses the same three bands as the card, so a 45% scan says
-"Not conclusive" in both places instead of "No pneumonia detected" above "cannot call this scan
-either way".
+reading of the image. The verdict badge takes its two band boundaries from the `thresholds` object
+the server sends with the prediction — the same ones the card uses — so a 45% scan says
+"Not conclusive" in both places, and a "Normal" badge can never sit next to "Pneumonia 55%".
 
 Everything from the API is written with `textContent` and built with `createElement` — no
 `innerHTML` anywhere — so a model reply containing markup stays literal text. Each "what to do"
@@ -290,6 +320,7 @@ Stage 1 downloads the Kaggle dataset (needs `~/.kaggle/kaggle.json`), verifies t
 
 - The legacy stages 3–4 in `src/` still use Keras 2 `ImageDataGenerator`; running `dvc repro` locally requires `tensorflow-cpu==2.15.1` on Python 3.11. The notebook is the supported path for new training runs.
 - When you export a model for serving, strip the optimizer, then confirm `/predict` still returns the same probabilities for a known image before deploying.
+- `model.h5` was written by Keras 3.15, whose initializer configs (`input_axes`) older releases reject. `get_model()` catches that failure and reads the weights straight out of the file, so the same artifact serves on TF 2.20 through 2.21.
 
 Artifacts (dataset, older models) are tracked with DVC against a DagsHub remote. Credentials are stored locally, never in Git:
 
@@ -307,6 +338,7 @@ Environment variables read by the app:
 | Variable | Default | Purpose |
 |---|---|---|
 | `MODEL_PATH` | `artifacts/training/model.h5` | Model location |
+| `CALIBRATION_PATH` | `artifacts/calibration.json` | Temperature + band thresholds; a missing file falls back to raw scores and 0.75/0.40 |
 | `PULL_MODEL_ON_START` | `1` | `dvc pull` the model at startup if it is missing; set `0` when the model is baked or mounted |
 | `DAGSHUB_USERNAME`, `DAGSHUB_TOKEN` | — | Credentials for that startup pull |
 | `PORT` | `8080` | Port for gunicorn / the dev server |
@@ -323,7 +355,8 @@ Hyperparameters live in `params.yaml` (`FREEZE_TILL`, `EPOCHS`, `BATCH_SIZE`, `L
 - `requirements-docker.txt` is a serving-only subset (no Kaggle, notebooks, matplotlib), plus
   `scikit-learn` for retrieval and `anthropic` for the optional LLM layer.
 - gunicorn runs with `workers = 1` and `preload_app = False`; the model loads once in `post_worker_init` to avoid the TensorFlow fork deadlock that `--preload` causes.
-- `.dockerignore` excludes everything under `artifacts/` except the serving model, so the image ships the model but no datasets or checkpoints.
+- `.dockerignore` excludes everything under `artifacts/` except the serving model and
+  `calibration.json`, so the image ships the model and its thresholds but no datasets or checkpoints.
 - On Render, pushing to `main` builds and deploys automatically. Give the service **at least 1 GB RAM** — VGG16 plus TensorFlow does not fit comfortably in 512 MB.
 
 ## Limitations

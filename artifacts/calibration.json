@@ -1,0 +1,21 @@
+{
+  "temperature": 1.589,
+  "thresholds": {
+    "low": 0.38,
+    "high": 0.52
+  },
+  "metrics": {
+    "ece_before": 0.0745,
+    "ece_after": 0.0737,
+    "brier_after": 0.0591,
+    "fold_temperatures": [1.715, 1.58, 1.468, 1.543, 1.632],
+    "bands": {
+      "likely_normal": {"n": 179, "positive_rate": 0.0168},
+      "uncertain": {"n": 20, "positive_rate": 0.2},
+      "likely_pneumonia": {"n": 425, "positive_rate": 0.9012}
+    },
+    "held_out_high_band": [0.9375, 0.9043, 0.881, 0.8901, 0.8961]
+  },
+  "fitted_on": "official test split, 5-fold grouped CV by patient id",
+  "n_images": 624
+}

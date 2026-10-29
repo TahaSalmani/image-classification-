@@ -222,5 +222,7 @@ artifacts/*
 !artifacts/training
 artifacts/training/*
 !artifacts/training/model.h5
+# calibration constants are tiny and must ship with the model
+!artifacts/calibration.json
 .venv/
 .idea/

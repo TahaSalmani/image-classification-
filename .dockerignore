@@ -19,6 +19,7 @@ artifacts/*
 !artifacts/training
 artifacts/training/*
 !artifacts/training/model.h5
+!artifacts/calibration.json
 .dvc/cache
 .dvc/tmp
 data

@@ -1115,10 +1115,21 @@
       var ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
       var MAX_SIDE = 1400;
 
-      // Must match HIGH_CONFIDENCE / LOW_CONFIDENCE in advice_logic.py, so the
-      // verdict badge and the advice card never disagree about a borderline scan.
-      var HIGH_CONFIDENCE = 0.75;
-      var LOW_CONFIDENCE = 0.40;
+      // Band thresholds travel with each prediction (they come from
+      // artifacts/calibration.json); these are only the fallback for a
+      // response that omits them.
+      var FALLBACK_HIGH = 0.75;
+      var FALLBACK_LOW = 0.40;
+
+      function bandThresholds(item) {
+        var raw = item && item.thresholds;
+        var high = raw ? Number(raw.high) : NaN;
+        var low = raw ? Number(raw.low) : NaN;
+        if (isFinite(high) && isFinite(low) && low >= 0 && high <= 1 && low <= high) {
+          return { high: high, low: low };
+        }
+        return { high: FALLBACK_HIGH, low: FALLBACK_LOW };
+      }
 
       var dropzone = document.getElementById("dropzone");
       var fileInput = document.getElementById("fileInput");
@@ -1367,6 +1378,7 @@
         resultView.hidden = false;
 
         var probability = pneumoniaProbability(item);
+        var bands = bandThresholds(item);
         var label = String(item.image || "Unknown").trim() || "Unknown";
         var lower = label.toLowerCase();
         var verdict;
@@ -1375,12 +1387,12 @@
         var text;
 
         if (probability !== null) {
-          if (probability >= HIGH_CONFIDENCE) {
+          if (probability >= bands.high) {
             verdict = "pneumonia";
             badge = "PNEUMONIA";
             title = "Pneumonia detected";
             text = "The model finds patterns consistent with pneumonia in this scan.";
-          } else if (probability >= LOW_CONFIDENCE) {
+          } else if (probability >= bands.low) {
             verdict = "unknown";
             badge = "UNCERTAIN";
             title = "Not conclusive";
